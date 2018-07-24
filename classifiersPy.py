@@ -7,6 +7,7 @@ import logging
 from neural_network.neural_network import NeuralNet
 
 
+
 module = sys.modules['__main__'].__file__
 log = logging.getLogger(module)
 
