@@ -2,18 +2,18 @@
 
 import tensorflow as tf
 import pandas as pd
-import numpy as np
-from sklearn import datasets
-from sklearn import metrics
-from sklearn import model_selection
-from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.cross_validation import train_test_split
+from sklearn.preprocessing import StandardScaler
+from keras.models import Sequential
+from keras.layers import Dense
+from sklearn.metrics import confusion_matrix
+
+
+
 
 """
 reference:
-https://github.com/aymericdamien/TensorFlow-Examples/blob/master/notebooks/3_NeuralNetworks/neural_network_raw.ipynb
-https://becominghuman.ai/creating-your-own-neural-network-using-tensorflow-fa8ca7cc4d0e
-https://github.com/michaelwayman/python-ann/blob/master/neural_network/neural_network.py
-
 real
 https://github.com/nikhilroxtomar/Iris-Data-Set-Classification-using-TensorFlow-MLP/blob/master/iris.py
 https://github.com/chadlimedamine/kdd-cup-99-Analysis-machine-learning-python/blob/master/kdd_binary_classification_ANN.py
@@ -24,9 +24,9 @@ https://github.com/khakhulin/IntrusionDetection
 
 class NeuralNet(object):
 
-    def __init__(self, file, num_entradas, num_ocultos, num_salidas, num_classes, epoch=200):
+    def __init__(self, filePath, num_entradas, num_ocultos, num_salidas, num_classes, epoch=200):
 
-        self.data_file = file
+        self.data_file = pd.read_csv(filePath)
         self.n_input = num_entradas
         self.n_hidden = num_ocultos
         self.n_output = num_salidas
@@ -37,17 +37,37 @@ class NeuralNet(object):
                              "classTrain": None,
                              "classTest": None}
 
-    def entrenar(self, classifierModel):
+    def entrenar(self):
         """
         entrenamos la red neuronal con los datos de entrenamiento
         :return:
         """
-        classifier = classifierModel
-        classifier.fit(self.dataSetBreak["dataTrain"], self.dataSetBreak["classTrain"], steps=self.n_epoch)
+        # Initialising the ANN
+        classifier = Sequential()
 
-        # usamos el modelo entrenado para realizar predicciones con los datos de test
-        predictions = list(classifier.predict(self.dataSetBreak["dataTest"], as_iterable=True))
-        return predictions
+        # Adding the input layer and the first hidden layer
+        classifier.add(Dense(output_dim=60, init='uniform', activation='relu', input_dim=118))
+
+        # Adding a second hidden layer
+        classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
+
+        # Adding a third hidden layer
+        classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
+
+        # Adding the output layer
+        classifier.add(Dense(output_dim=1, init='uniform', activation='sigmoid'))
+
+        # Compiling the ANN
+        classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+        # Fitting the ANN to the Training set
+        classifier.fit(self.dataSetBreak["dataTrain"], self.dataSetBreak["classTrain"], batch_size=10, nb_epoch=2)
+
+        # Predicting the Test set results
+        y_pred = classifier.predict(self.dataSetBreak["dataTest"])
+        y_pred = (y_pred > 0.5)
+
+        return y_pred
 
 
     def crete_model_net(self):
@@ -64,26 +84,48 @@ class NeuralNet(object):
         return clasi
 
     def break_datadet(self):
-        target = self.data_file.target
+        x = self.data_file.iloc[:, :-1].values
+        y = self.data_file.iloc[:, 41].values
 
-        # target = le.fit_transform(target)
-        data = self.data_file.data
-        x_train, x_test, y_train, y_test = model_selection.train_test_split(data, target,
-                                                                            test_size=0.2, random_state=42)
-        self.dataSetBreak["dataTrain"]=x_train
-        self.dataSetBreak["dataTest"]=x_test
-        self.dataSetBreak["classTrain"]=y_train
-        self.dataSetBreak["classTest"]=y_test
+        labelencoder_x_1 = LabelEncoder()
+        labelencoder_x_2 = LabelEncoder()
+        labelencoder_x_3 = LabelEncoder()
+        x[:, 1] = labelencoder_x_1.fit_transform(x[:, 1])
+        x[:, 2] = labelencoder_x_2.fit_transform(x[:, 2])
+        x[:, 3] = labelencoder_x_3.fit_transform(x[:, 3])
+        onehotencoder_1 = OneHotEncoder(categorical_features=[1])
+        x = onehotencoder_1.fit_transform(x).toarray()
+        onehotencoder_2 = OneHotEncoder(categorical_features=[4])
+        x = onehotencoder_2.fit_transform(x).toarray()
+        onehotencoder_3 = OneHotEncoder(categorical_features=[70])
+        x = onehotencoder_3.fit_transform(x).toarray()
+        labelencoder_y = LabelEncoder()
+        y = labelencoder_y.fit_transform(y)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=0)
+
+        # feature scaling
+        sc_x = StandardScaler()
+        x_train = sc_x.fit_transform(x_train)
+        x_test = sc_x.transform(x_test)
+        self.dataSetBreak["dataTrain"] = x_train
+        self.dataSetBreak["dataTest"] = x_test
+        self.dataSetBreak["classTrain"] = y_train
+        self.dataSetBreak["classTest"] = y_test
 
     def runClasificador(self):
-        self.data_file = datasets.fetch_kddcup99()
+        # importing the dataset
+        # change Multi-class to binary-class
+        self.data_file['normal.'] = self.data_file['normal.'].replace(
+            ['back.', 'buffer_overflow.', 'ftp_write.', 'guess_passwd.', 'imap.', 'ipsweep.', 'land.', 'loadmodule.',
+             'multihop.', 'neptune.', 'nmap.', 'perl.', 'phf.', 'pod.', 'portsweep.', 'rootkit.', 'satan.', 'smurf.',
+             'spy.', 'teardrop.', 'warezclient.', 'warezmaster.'], 'attack')
 
-        le = preprocessing.LabelEncoder()
-        self.data_file.target = le.fit_transform(self.data_file.target)
+        y_predi = self.entrenar()
+        cm = confusion_matrix(self.dataSetBreak["classTest"], y_predi)
 
-        clasificador = self.crete_model_net()
-        predictions = self.entrenar(clasificador)
-
-        # comprobamos como de buenas han sido las predicciones y calculamos la precisión de nuestro modelo
-        score = metrics.accuracy_score(self.dataSetBreak["classTest"], predictions)
-        print('Accuracy: {0:f}'.format(score))
+        # the performance of the classification model
+        print("la precisión es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))
+        recall = cm[1, 1] / (cm[0, 1] + cm[1, 1])
+        # print("Recall is : " + str(recall))
+        print("Tasa de Falsos Positivos: " + str(cm[1, 0] / (cm[0, 0] + cm[1, 0])))
+        precision = cm[1, 1] / (cm[1, 0] + cm[1, 1])
