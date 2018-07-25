@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import sys
@@ -43,7 +43,7 @@ def parse_command_line(argv):
                         type=argparse.FileType('r'), default=sys.stdout,
                         help="Redirigir la salida a un archivo")
 
-    parser.add_argument('-f', metavar="file", type=argparse.FileType('w'), default=sys.stdout,
+    parser.add_argument('-f', metavar="file", type=str,
                         help="Archivo con datos de entrada (csv)")
 
     parser.add_argument('-e', metavar="epoch", type=int, default=0, help="Epoch for Neural Network")
@@ -55,6 +55,10 @@ def parse_command_line(argv):
     parser.add_argument('-nO', metavar="n_output", type=int, default=0, help="n_output")
 
     parser.add_argument('-nC', metavar="n_class", type=int, help="Numero de clases reales")
+
+    parser.add_argument('-tS', "--testSize", metavar="n_class", type=int, help="Numero de clases reales")
+
+    parser.add_argument('-k', metavar="k_vecinos", type=int, help="Numero k vecinos")
 
     arguments = parser.parse_args(argv[1:])
 
@@ -68,15 +72,17 @@ def main():
     try:
         arguments = parse_command_line(sys.argv)
         if arguments.neuralNet:
-            if arguments.nH:
+            if arguments.e:
                 modelo=map(int, str(arguments.nH).split(","))
-                n_n = NeuralNet(arguments.f, arguments.nI, modelo, arguments.nO, arguments.nC, arguments.e)
+                n_n = NeuralNet(arguments.f, arguments.nI, modelo, arguments.nO, arguments.nC, arguments.e, arguments.testSize)
                 log.info("info: objeto creado")
                 n_n.runClasificador()
             else:
-                log.error("Se debe enviar el atributo -nH para crear el modelo")
+                log.error("Se debe enviar el atributo -e para el numero de epocas a realizar")
         elif arguments.bayesNet:
-            b_n=BayesNet()
+            b_n=BayesNet(arguments.f, arguments.k, arguments.nC, arguments.testSize)
+            log.info("info: objeto creado")
+            b_n.run_bayes_net()
         else:
             log.error("Ningun metodo de clasificación seleccinado")
 

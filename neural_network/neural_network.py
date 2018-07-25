@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import tensorflow as tf
 import pandas as pd
+import matplotlib.pyplot as plt
+import itertools
+import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.cross_validation import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -14,9 +18,6 @@ from sklearn.metrics import confusion_matrix
 
 """
 reference:
-real
-https://github.com/nikhilroxtomar/Iris-Data-Set-Classification-using-TensorFlow-MLP/blob/master/iris.py
-https://github.com/chadlimedamine/kdd-cup-99-Analysis-machine-learning-python/blob/master/kdd_binary_classification_ANN.py
 https://github.com/Belval/ML-IDS
 https://github.com/khakhulin/IntrusionDetection
 """
@@ -24,7 +25,7 @@ https://github.com/khakhulin/IntrusionDetection
 
 class NeuralNet(object):
 
-    def __init__(self, filePath, num_entradas, num_ocultos, num_salidas, num_classes, epoch=200):
+    def __init__(self, filePath, num_entradas, num_ocultos, num_salidas, num_classes, epoch=20, testSize=0.3):
 
         self.data_file = pd.read_csv(filePath)
         self.n_input = num_entradas
@@ -32,6 +33,7 @@ class NeuralNet(object):
         self.n_output = num_salidas
         self.n_class = num_classes
         self.n_epoch = epoch
+        self.test_size = testSize
         self.dataSetBreak = {"dataTrain": None,
                              "dataTest": None,
                              "classTrain": None,
@@ -42,29 +44,30 @@ class NeuralNet(object):
         entrenamos la red neuronal con los datos de entrenamiento
         :return:
         """
-        # Initialising the ANN
+        # iniciar la ANN
         classifier = Sequential()
 
-        # Adding the input layer and the first hidden layer
+        # agregando la capa de entrada y la primera capa oculta
         classifier.add(Dense(output_dim=60, init='uniform', activation='relu', input_dim=118))
 
-        # Adding a second hidden layer
+        # agregando la segunda capa oculta
         classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
 
-        # Adding a third hidden layer
+        # agregando la tercera capa oculta
         classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
 
-        # Adding the output layer
+        # agregando capa de salida
         classifier.add(Dense(output_dim=1, init='uniform', activation='sigmoid'))
 
         # Compiling the ANN
+        # copilando ANN
         classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-        # Fitting the ANN to the Training set
-        classifier.fit(self.dataSetBreak["dataTrain"], self.dataSetBreak["classTrain"], batch_size=10, nb_epoch=2)
+        # ajustar ANN con los datos de entrenamiento
+        classifier.fit(self.dataSetBreak["x_train"], self.dataSetBreak["y_train"], batch_size=10, nb_epoch=self.n_epoch)
 
-        # Predicting the Test set results
-        y_pred = classifier.predict(self.dataSetBreak["dataTest"])
+        # predecir los resultados con los datos de test
+        y_pred = classifier.predict(self.dataSetBreak["x_test"])
         y_pred = (y_pred > 0.5)
 
         return y_pred
@@ -83,10 +86,46 @@ class NeuralNet(object):
                                                n_classes=self.n_class)
         return clasi
 
+    def plot_confusion_matrix(self, cm, classes,
+                              normalize=False,
+                              title='Confusion matrix',
+                              cmap=plt.cm.Blues):
+        """
+        This function prints and plots the confusion matrix.
+        Normalization can be applied by setting `normalize=True`.
+        """
+        if normalize:
+            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            print("Normalized confusion matrix")
+        else:
+            print('Confusion matrix, without normalization')
+
+        print(cm)
+
+        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.title(title)
+        plt.colorbar()
+        tick_marks = np.arange(len(classes))
+        plt.xticks(tick_marks, classes, rotation=45)
+        plt.yticks(tick_marks, classes)
+
+        fmt = '.2f' if normalize else 'd'
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], fmt),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+
     def break_datadet(self):
+        # separar los datos de la clase
         x = self.data_file.iloc[:, :-1].values
         y = self.data_file.iloc[:, 41].values
 
+        # encodificiacion de los datos
         labelencoder_x_1 = LabelEncoder()
         labelencoder_x_2 = LabelEncoder()
         labelencoder_x_3 = LabelEncoder()
@@ -101,31 +140,44 @@ class NeuralNet(object):
         x = onehotencoder_3.fit_transform(x).toarray()
         labelencoder_y = LabelEncoder()
         y = labelencoder_y.fit_transform(y)
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=0)
 
-        # feature scaling
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=self.test_size, random_state=0)
+
+        # calado de caracteristicas
         sc_x = StandardScaler()
         x_train = sc_x.fit_transform(x_train)
         x_test = sc_x.transform(x_test)
-        self.dataSetBreak["dataTrain"] = x_train
-        self.dataSetBreak["dataTest"] = x_test
-        self.dataSetBreak["classTrain"] = y_train
-        self.dataSetBreak["classTest"] = y_test
+        self.dataSetBreak["x_train"] = x_train
+        self.dataSetBreak["x_test"] = x_test
+        self.dataSetBreak["y_train"] = y_train
+        self.dataSetBreak["y_test"] = y_test
 
     def runClasificador(self):
-        # importing the dataset
-        # change Multi-class to binary-class
+        # cambiar multiclase a una clase binaria separando los datos normales de un ataque
         self.data_file['normal.'] = self.data_file['normal.'].replace(
             ['back.', 'buffer_overflow.', 'ftp_write.', 'guess_passwd.', 'imap.', 'ipsweep.', 'land.', 'loadmodule.',
              'multihop.', 'neptune.', 'nmap.', 'perl.', 'phf.', 'pod.', 'portsweep.', 'rootkit.', 'satan.', 'smurf.',
              'spy.', 'teardrop.', 'warezclient.', 'warezmaster.'], 'attack')
 
+        self.break_datadet()
         y_predi = self.entrenar()
-        cm = confusion_matrix(self.dataSetBreak["classTest"], y_predi)
+        cm = confusion_matrix(self.dataSetBreak["y_test"], y_predi)
+
+        np.set_printoptions(precision=2)
+        # Plot non-normalized confusion matrix
+        plt.figure()
+        a = ["1:Normal", "0:Attack"]
+        self.plot_confusion_matrix(cm, classes=a, title='Matrix de confusión, sin normalizar')
+
+        # Plot normalized confusion matrix
+        plt.figure()
+        self.plot_confusion_matrix(cm, classes=a, normalize=True,
+                                   title='Matrix de confusión normalizada ')
+        plt.show()
 
         # the performance of the classification model
-        print("la precisión es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))
-        recall = cm[1, 1] / (cm[0, 1] + cm[1, 1])
-        # print("Recall is : " + str(recall))
-        print("Tasa de Falsos Positivos: " + str(cm[1, 0] / (cm[0, 0] + cm[1, 0])))
+        print("La exactitud es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))
+        print("Ratio de falsos positivos: " + str(cm[1, 0] / (cm[0, 0] + cm[1, 0])))
         precision = cm[1, 1] / (cm[1, 0] + cm[1, 1])
+        print("Precision es: " + str(precision))
+
