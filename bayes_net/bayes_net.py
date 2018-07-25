@@ -27,6 +27,10 @@ class BayesNet(object):
                              "classTest": None}
 
     def entrenar(self):
+        """
+        funcion para realizar clasificacion y prediccion de resultados de test
+        :return: regresa la prediccion de y y el clasificado para
+        """
         classifier = GaussianNB()
         classifier.fit(self.dataSetBreak["x_train"], self.dataSetBreak["y_train"])
 
@@ -70,6 +74,10 @@ class BayesNet(object):
         plt.xlabel('Predicted label')
 
     def break_datadet(self):
+        """
+        funcion para codificar los datos y separa datos para entrenamiento y preubas
+        :return:
+        """
         x = self.data_file.iloc[:, :-1].values
         y = self.data_file.iloc[:, 41].values
 
@@ -102,6 +110,10 @@ class BayesNet(object):
         self.dataSetBreak["y_test"] = y_test
 
     def run_bayes_net(self):
+        """
+        funcion inicial para ejecutar_todo el algoritmo
+        :return:
+        """
         self.data_file['normal.'] = self.data_file['normal.'].replace(
             ['back.', 'buffer_overflow.', 'ftp_write.', 'guess_passwd.', 'imap.', 'ipsweep.', 'land.', 'loadmodule.',
              'multihop.', 'neptune.', 'nmap.', 'perl.', 'phf.', 'pod.', 'portsweep.', 'rootkit.', 'satan.', 'smurf.',
@@ -111,16 +123,11 @@ class BayesNet(object):
         y_predi, classi = self.entrenar()
         cm = confusion_matrix(self.dataSetBreak["y_test"], y_predi)
 
-        # Applying k-Fold Cross Validation
-        accuracies = cross_val_score(estimator=classi, X=self.dataSetBreak["x_train"], y=self.dataSetBreak["y_train"], cv=10)
-        accuracies.mean()
-        accuracies.std()
-
-
+        # graficar la matrix
         np.set_printoptions(precision=2)
         # Plot non-normalized confusion matrix
         plt.figure()
-        a=["1:Normal", "0:Attack"]
+        a = ["1:Normal", "0:Attack"]
         self.plot_confusion_matrix(cm, classes=a, title='Matrix de confusión, sin normalizar')
 
         # Plot normalized confusion matrix
@@ -130,7 +137,7 @@ class BayesNet(object):
         plt.show()
 
         # the performance of the classification model
-        print("la exactitud es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))
+        print("La exactitud es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))
 
         print("Ratio de falsos positivos: " + str(cm[1, 0] / (cm[0, 0] + cm[1, 0])))
         precision = cm[1, 1] / (cm[1, 0] + cm[1, 1])

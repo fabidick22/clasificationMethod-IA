@@ -13,13 +13,9 @@ from keras.models import Sequential
 from keras.layers import Dense
 from sklearn.metrics import confusion_matrix
 
-
-
-
 """
 reference:
-https://github.com/Belval/ML-IDS
-https://github.com/khakhulin/IntrusionDetection
+https://github.com/chadlimedamine/kdd-cup-99-Analysis-machine-learning-python
 """
 
 
@@ -41,7 +37,7 @@ class NeuralNet(object):
 
     def entrenar(self):
         """
-        entrenamos la red neuronal con los datos de entrenamiento
+        iniciar el modelo de red neuronal artificial (ANN), realizar entrenamiento y predecir con resultados de test
         :return:
         """
         # iniciar la ANN
@@ -73,18 +69,18 @@ class NeuralNet(object):
         return y_pred
 
 
-    def crete_model_net(self):
-        self.break_datadet()
-        if self.n_class is None:
-            self.n_class = len(set(self.data_file.target))
-
-        # f = [tf.feature_column.numeric_column("x", shape=[4])]
-        # f_columnas = tf.contrib.learn.infer_real_valued_columns_from_input(self.dataSetBreak["dataTrain"])
-        feature_columns = [tf.feature_column.numeric_column("x", shape=[4])]
-        # hidden_units= [10, 20, 10] se va a crear un modelo de 3 capas con 10, 20 y 10 unidades respectivamente
-        clasi = tf.contrib.learn.DNNClassifier(feature_columns=feature_columns, hidden_units=self.n_hidden,
-                                               n_classes=self.n_class)
-        return clasi
+    # def crete_model_net(self):
+    #     self.break_datadet()
+    #     if self.n_class is None:
+    #         self.n_class = len(set(self.data_file.target))
+    #
+    #     # f = [tf.feature_column.numeric_column("x", shape=[4])]
+    #     # f_columnas = tf.contrib.learn.infer_real_valued_columns_from_input(self.dataSetBreak["dataTrain"])
+    #     feature_columns = [tf.feature_column.numeric_column("x", shape=[4])]
+    #     # hidden_units= [10, 20, 10] se va a crear un modelo de 3 capas con 10, 20 y 10 unidades respectivamente
+    #     clasi = tf.contrib.learn.DNNClassifier(feature_columns=feature_columns, hidden_units=self.n_hidden,
+    #                                            n_classes=self.n_class)
+    #     return clasi
 
     def plot_confusion_matrix(self, cm, classes,
                               normalize=False,
@@ -121,6 +117,10 @@ class NeuralNet(object):
         plt.xlabel('Predicted label')
 
     def break_datadet(self):
+        """
+        funcion para codificar los datos y separa datos para entrenamiento y preubas
+        :return:
+        """
         # separar los datos de la clase
         x = self.data_file.iloc[:, :-1].values
         y = self.data_file.iloc[:, 41].values
@@ -153,6 +153,10 @@ class NeuralNet(object):
         self.dataSetBreak["y_test"] = y_test
 
     def runClasificador(self):
+        """
+        funcion inicial para ejecutar_todo el algoritmo
+        :return:
+        """
         # cambiar multiclase a una clase binaria separando los datos normales de un ataque
         self.data_file['normal.'] = self.data_file['normal.'].replace(
             ['back.', 'buffer_overflow.', 'ftp_write.', 'guess_passwd.', 'imap.', 'ipsweep.', 'land.', 'loadmodule.',
