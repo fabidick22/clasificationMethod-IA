@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import tensorflow as tf
 import pandas as pd
 import matplotlib.pyplot as plt
 import itertools
@@ -47,10 +46,10 @@ class NeuralNet(object):
         classifier.add(Dense(output_dim=60, init='uniform', activation='relu', input_dim=118))
 
         # agregando la segunda capa oculta
-        classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
+        classifier.add(Dense(output_dim=8, init='uniform', activation='relu'))
 
         # agregando la tercera capa oculta
-        classifier.add(Dense(output_dim=60, init='uniform', activation='relu'))
+        classifier.add(Dense(output_dim=8, init='uniform', activation='relu'))
 
         # agregando capa de salida
         classifier.add(Dense(output_dim=1, init='uniform', activation='sigmoid'))
@@ -61,7 +60,8 @@ class NeuralNet(object):
 
         # ajustar ANN con los datos de entrenamiento
         classifier.fit(self.dataSetBreak["x_train"], self.dataSetBreak["y_train"], batch_size=10, nb_epoch=self.n_epoch)
-
+        from keras.utils import plot_model
+        plot_model(classifier.model, to_file='model.png', show_shapes=True, show_layer_names=True)
         # predecir los resultados con los datos de test
         y_pred = classifier.predict(self.dataSetBreak["x_test"])
         y_pred = (y_pred > 0.5)
@@ -178,6 +178,7 @@ class NeuralNet(object):
         self.plot_confusion_matrix(cm, classes=a, normalize=True,
                                    title='Matrix de confusión normalizada ')
         plt.show()
+
 
         # the performance of the classification model
         print("La exactitud es: " + str((cm[0, 0] + cm[1, 1]) / (cm[0, 0] + cm[0, 1] + cm[1, 0] + cm[1, 1])))

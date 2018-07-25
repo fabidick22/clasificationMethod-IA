@@ -7,7 +7,6 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.cross_validation import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import cross_val_score
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import itertools
